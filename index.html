@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Привал Яндексоида</title>
+  <meta name="description" content="Тихое место у костра для тех, у кого отменились важные мероприятия.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="leaves" id="leaves" aria-hidden="true"></div>
+
+  <button class="theme-toggle" id="themeToggle" type="button" aria-label="Переключить тему">☾</button>
+
+  <main class="wrap">
+    <header class="hero">
+      <h1>Отдохни, воин. Это был тяжелый день.</h1>
+      <p class="sub">* Мероприятия отменились, планы сломались. Присядь к костру: здесь никто ничего от тебя не ждёт.</p>
+    </header>
+
+    <section class="center">
+      <label class="box input-box" for="userText">
+        <span class="visually-hidden">Что у тебя на душе?</span>
+        <textarea id="userText" rows="3" maxlength="1000" placeholder="* Расскажи, что случилось, или вставь то самое сообщение…"></textarea>
+        <span class="counter" id="counter">0 / 1000</span>
+      </label>
+
+      <div class="box out-box" id="out" role="status" aria-live="polite" hidden></div>
+    </section>
+
+    <nav class="actions" aria-label="Действия">
+      <button class="btn" type="button" data-mode="friend" data-ai>Переработать негатив (как друг)</button>
+      <button class="btn" type="button" data-mode="opponent" data-ai>Взгляд со стороны оппонента</button>
+      <button class="btn" type="button" id="tiredBtn">🔋 Я устал(-а)</button>
+      <button class="btn" type="button" id="catBtn">🐈 Доза милоты</button>
+    </nav>
+  </main>
+
+  <div class="scene" aria-hidden="true">
+    <div class="scene-inner">
+      <div class="sprite tree" id="tree"></div>
+      <div class="sprite knight" id="knight"></div>
+      <div class="fire">
+        <div class="glow"></div>
+        <div class="sprite flame" id="flame"></div>
+        <div class="sprite logs" id="logs"></div>
+      </div>
+    </div>
+    <div class="ground"></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
