@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark light">
   <title>Привал Яндексоида</title>
   <meta name="description" content="Тихое место у костра для тех, у кого отменились важные мероприятия.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -29,39 +30,58 @@
   <div class="app">
     <header class="header">
       <p class="header__brand">Привал Яндексоида</p>
-      <div class="header__tools">
-        <button class="tool" id="clearBtn" type="button">Новый привал</button>
-        <button class="tool tool--icon" id="themeToggle" type="button" aria-label="Переключить тему">☾</button>
-      </div>
+      <button class="btn btn--icon" id="themeToggle" type="button" aria-label="Переключить тему">☾</button>
     </header>
 
-    <main class="main">
-      <section class="welcome" id="welcome">
-        <h1 class="welcome__title">Отдохни, воин. Это был тяжелый день.</h1>
-        <!-- <p class="welcome__subtitle">* Мероприятия отменились, планы сломались. Присядь к костру: здесь никто ничего от тебя не ждёт.</p> -->
+    <main class="main" id="main">
+      <section class="stage" aria-label="Слова поддержки">
+        <article class="card" id="card" aria-live="polite" aria-atomic="true"></article>
+
+        <div class="actions" role="group" aria-label="Действия">
+          <button class="btn btn--heart" id="memeBtn" type="button">🃏 Показать жизу (Мем)</button>
+          <button class="btn btn--heart" id="warmBtn" type="button">🔋 Еще тепла</button>
+          <button class="btn btn--heart" id="clearBtn" type="button">🧹 Новый привал</button>
+        </div>
       </section>
-      <ol class="chat" id="chat" aria-live="polite" aria-label="Диалог"></ol>
+
+      <ol class="log" id="log" hidden aria-label="Переписка с ИИ" aria-live="polite"></ol>
     </main>
 
     <footer class="composer" id="composer">
-      <nav class="starters" aria-label="Подсказки">
-        <button class="starters__item starters__item--mode" type="button" data-action="friend">Переработать негатив (как друг)</button>
-        <button class="starters__item starters__item--mode" type="button" data-action="opponent">Переработать негатив (взгляд оппонента)</button>
-        <button class="starters__item" type="button" data-action="tired">🔋 Я устал(-а)</button>
-        <button class="starters__item" type="button" data-action="cat">🐈 Доза милоты</button>
-      </nav>
-
       <form class="composer__form" id="form" autocomplete="off">
-        <button class="composer__mode" id="modeChip" type="button"></button>
-        <div class="composer__box">
-          <label class="visually-hidden" for="input">Сообщение</label>
-          <textarea class="composer__input" id="input" rows="1" maxlength="1000"></textarea>
-          <button class="composer__send" type="submit" aria-label="Отправить">➤</button>
+        <div class="composer__modes" role="group" aria-label="Режим переработки негатива">
+          <button class="btn btn--toggle" type="button" data-mode="friend" aria-pressed="false">Как друг</button>
+          <button class="btn btn--toggle" type="button" data-mode="opponent" aria-pressed="false">Взгляд оппонента</button>
         </div>
-        <p class="composer__hint">Enter — отправить, Shift+Enter — новая строка</p>
+        <div class="composer__box">
+          <label class="visually-hidden" for="input">Сообщение для ИИ</label>
+          <textarea class="composer__input" id="input" rows="1" maxlength="1000" aria-describedby="hint"></textarea>
+          <button class="composer__send" id="sendBtn" type="submit" aria-label="Отправить">➤</button>
+        </div>
+        <p class="composer__hint" id="hint">Необязательно. Вставь сообщение, которое задело. Enter отправляет, Shift+Enter переносит строку. Не пиши пароли и коммерческие тайны: текст уходит в GigaChat.</p>
       </form>
     </footer>
   </div>
+
+  <p class="toast" id="toast" role="status"></p>
+
+  <dialog class="intro" id="intro" aria-labelledby="introTitle">
+    <div class="intro__body">
+      <h2 class="intro__title" id="introTitle">Привет, путник.</h2>
+      <p class="intro__lead">Этот привал создан, чтобы поддержать тебя. Без регистрации и без обязательных действий.</p>
+      <ul class="intro__list">
+        <li class="intro__item">
+          <span aria-hidden="true">🔒</span>
+          <p><strong>Privacy-First.</strong> История чата хранится только в LocalStorage твоего браузера, в базу данных мы ничего не пишем. Фразы и мемы работают полностью локально. Текст уходит на сервер, только когда ты сам отправляешь его ИИ: последние до 10 сообщений диалога проходят через нашу функцию на Vercel в GigaChat (Сбер). Наш код их не сохраняет, но у GigaChat свои правила обработки данных.</p>
+        </li>
+        <li class="intro__item">
+          <span aria-hidden="true">🧹</span>
+          <p><strong>Контроль.</strong> Кнопка «Новый привал» мгновенно и безвозвратно стирает локальную историю на этом устройстве. Уже отправленное в GigaChat мы отозвать не можем, поэтому секреты в чат лучше не писать.</p>
+        </li>
+      </ul>
+      <button class="btn btn--primary" id="introClose" type="button" autofocus>Зайти на привал</button>
+    </div>
+  </dialog>
 
   <script src="script.js"></script>
 </body>
