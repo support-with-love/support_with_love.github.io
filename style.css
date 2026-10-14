@@ -197,3 +197,12 @@ button, textarea { font: inherit; color: inherit; }
   .leaves { display: none; }
   .scene, .toast, .page { transition: none; }
 }
+
+/* ---------- Подсказка режима ---------- */
+.composer__mode-hint { margin: 0 0 8px; min-height: 2.4em; font-size: 18px; line-height: 1.2; color: var(--muted); }
+.composer__modes .btn { flex: 1 1 auto; }
+@media (max-height: 700px) {
+  .card { min-height: 110px; }
+  .card__emoji { font-size: 44px; }
+  .composer__mode-hint { font-size: 16px; }
+}
