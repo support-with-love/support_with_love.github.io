@@ -10,46 +10,57 @@
   <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="page">
   <div class="leaves" id="leaves" aria-hidden="true"></div>
 
-  <button class="theme-toggle" id="themeToggle" type="button" aria-label="Переключить тему">☾</button>
-
-  <main class="wrap">
-    <header class="hero">
-      <h1>Отдохни, воин. Это был тяжелый день.</h1>
-      <p class="sub">* Мероприятия отменились, планы сломались. Присядь к костру: здесь никто ничего от тебя не ждёт.</p>
-    </header>
-
-    <section class="center">
-      <label class="box input-box" for="userText">
-        <span class="visually-hidden">Что у тебя на душе?</span>
-        <textarea id="userText" rows="3" maxlength="1000" placeholder="* Расскажи, что случилось, или вставь то самое сообщение…"></textarea>
-        <span class="counter" id="counter">0 / 1000</span>
-      </label>
-
-      <div class="box out-box" id="out" role="status" aria-live="polite" hidden></div>
-    </section>
-
-    <nav class="actions" aria-label="Действия">
-      <button class="btn" type="button" data-mode="friend" data-ai>Переработать негатив (как друг)</button>
-      <button class="btn" type="button" data-mode="opponent" data-ai>Взгляд со стороны оппонента</button>
-      <button class="btn" type="button" id="tiredBtn">🔋 Я устал(-а)</button>
-      <button class="btn" type="button" id="catBtn">🐈 Доза милоты</button>
-    </nav>
-  </main>
-
   <div class="scene" aria-hidden="true">
-    <div class="scene-inner">
-      <div class="sprite tree" id="tree"></div>
-      <div class="sprite knight" id="knight"></div>
-      <div class="fire">
-        <div class="glow"></div>
-        <div class="sprite flame" id="flame"></div>
-        <div class="sprite logs" id="logs"></div>
+    <div class="scene__inner">
+      <div class="sprite scene__tree" id="tree"></div>
+      <div class="sprite scene__knight" id="knight"></div>
+      <div class="scene__fire">
+        <div class="scene__glow"></div>
+        <div class="sprite scene__flame" id="flame"></div>
+        <div class="sprite scene__logs" id="logs"></div>
       </div>
     </div>
-    <div class="ground"></div>
+    <div class="scene__ground"></div>
+  </div>
+
+  <div class="app">
+    <header class="header">
+      <p class="header__brand">Привал Яндексоида</p>
+      <div class="header__tools">
+        <button class="tool" id="clearBtn" type="button">Новый привал</button>
+        <button class="tool tool--icon" id="themeToggle" type="button" aria-label="Переключить тему">☾</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="welcome" id="welcome">
+        <h1 class="welcome__title">Отдохни, воин. Это был тяжелый день.</h1>
+        <!-- <p class="welcome__subtitle">* Мероприятия отменились, планы сломались. Присядь к костру: здесь никто ничего от тебя не ждёт.</p> -->
+      </section>
+      <ol class="chat" id="chat" aria-live="polite" aria-label="Диалог"></ol>
+    </main>
+
+    <footer class="composer" id="composer">
+      <nav class="starters" aria-label="Подсказки">
+        <button class="starters__item starters__item--mode" type="button" data-action="friend">Переработать негатив (как друг)</button>
+        <button class="starters__item starters__item--mode" type="button" data-action="opponent">Переработать негатив (взгляд оппонента)</button>
+        <button class="starters__item" type="button" data-action="tired">🔋 Я устал(-а)</button>
+        <button class="starters__item" type="button" data-action="cat">🐈 Доза милоты</button>
+      </nav>
+
+      <form class="composer__form" id="form" autocomplete="off">
+        <button class="composer__mode" id="modeChip" type="button"></button>
+        <div class="composer__box">
+          <label class="visually-hidden" for="input">Сообщение</label>
+          <textarea class="composer__input" id="input" rows="1" maxlength="1000"></textarea>
+          <button class="composer__send" type="submit" aria-label="Отправить">➤</button>
+        </div>
+        <p class="composer__hint">Enter — отправить, Shift+Enter — новая строка</p>
+      </form>
+    </footer>
   </div>
 
   <script src="script.js"></script>
