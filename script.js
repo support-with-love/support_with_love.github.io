@@ -1,46 +1,46 @@
 'use strict';
 
 /* ==========================================================================
-   Привал Яндексоида: чат у костра
-   Секции: конфиг, структуры данных, хранилище, сцена, листья, тема, чат
+   Привал Яндексоида
+   Секции: конфиг, структуры данных, хранилище, сцена, листья, тема,
+   карточка и мемы, переписка с ИИ, очистка, интро
    ========================================================================== */
 
 /* ---------- Конфиг ---------- */
 // Для GitHub Pages укажите полный адрес Vercel, например 'https://privat.vercel.app/api/gigachat'
 const API_URL = '/api/gigachat';
+const VISITED_KEY = 'visited';
 const STORAGE_KEY = 'privat.chat.v1';
 const THEME_KEY = 'privat-theme';
-const HISTORY_LIMIT = 10;      // ограниченная очередь: максимум сообщений в контексте
-const MAX_INPUT = 1000;
-const MAX_STORED = 2000;       // длина одного сообщения при чтении из хранилища
+const HISTORY_LIMIT = 10;       // максимум сообщений в контексте ИИ
+const MAX_STORED = 2000;
 const REQUEST_TIMEOUT_MS = 30000;
-const IMG_ORIGIN = /^https:\/\/images\.unsplash\.com\//;
+const TOAST_MS = 3800;
 
-const MODES = {
-  chat: 'обычный чат',
-  friend: 'как друг',
-  opponent: 'взгляд оппонента'
-};
+const MODES = { chat: 'обычный чат', friend: 'как друг', opponent: 'взгляд оппонента' };
 const PLACEHOLDERS = {
-  chat: '* Расскажи, что случилось…',
-  friend: '* Вставь обидное сообщение, перескажу как друг…',
-  opponent: '* Вставь сообщение, посмотрим глазами его автора…'
+  chat: 'Если хочется выговориться, напиши сюда…',
+  friend: 'Вставь обидное сообщение, перескажу как друг…',
+  opponent: 'Вставь сообщение, посмотрим глазами его автора…'
 };
+
 const PHRASES = [
-  'Даже если ты сделал неправильный выбор, он привёл тебя сюда, к костру. Здесь можно выдохнуть.',
-  'Каждое твоё решение верное: ты принимал его с теми силами и знаниями, что были тогда.',
+  'Даже если ты сделал неправильный выбор, он привёл тебя сюда. Здесь можно выдохнуть.',
+  'Здесь и сейчас позаботься о себе: вода, тёплый чай, пять медленных вдохов.',
   'Shit happens. Но все shit проходит, а ты остаёшься.',
-  'Отмены случаются не из-за тебя. Ты уже сделал достаточно.',
-  'Сегодня можно ничего не доказывать. Просто посиди: огонь потрескивает, всё хорошо.'
+  'Спасибо, что так выкладывался. Отмена мероприятия не отменяет твой вклад.',
+  'Каждое твоё решение верное: ты принимал его с теми силами и знаниями, что были тогда.',
+  'Сегодня можно ничего не доказывать. Огонь потрескивает, всё хорошо.'
 ];
-const CATS = [
-  'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=640&q=70',
-  'https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=640&q=70',
-  'https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=640&q=70',
-  'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=640&q=70',
-  'https://images.unsplash.com/photo-1495360010541-f48722b34f7d?w=640&q=70'
+
+/* Мемы рисуются локально (подпись + эмодзи): без внешних картинок, которые могут пропасть или быть недоступны. */
+const MEMES = [
+  { emoji: '⏳', top: 'Дедлайн был вчера', bottom: 'Значит, мы уже в запасе. Дыши.' },
+  { emoji: '🔥🖥️🔥', top: 'Упал прод', bottom: 'Откат тоже скилл. Такое бывает у всех.' },
+  { emoji: '📞😶', top: 'Созвон на час', bottom: 'Мог быть сообщением, но ты пришёл. Ты молодец.' },
+  { emoji: '🐈‍💻', top: 'Кот-разработчик на ревью', bottom: 'Одобрено. Лапки прод не трогали.' },
+  { emoji: '🛌', top: 'Мероприятие отменили', bottom: 'Теперь можно просто пойти домой и поспать.' }
 ];
-const CAT_CAPTION = '🐈 (показан фото котика)';
 
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = (id) => document.getElementById(id);
@@ -49,18 +49,12 @@ const $ = (id) => document.getElementById(id);
    Структуры данных (CLRS)
    ========================================================================== */
 
-/** Ограниченная очередь на кольцевом буфере (CLRS 10.1). enqueue и вытеснение FIFO: O(1). */
+/** Ограниченная очередь на кольцевом буфере (CLRS 10.1): enqueue и вытеснение FIFO за O(1). */
 class BoundedQueue {
-  constructor(capacity) {
-    this.capacity = capacity;
-    this.buffer = new Array(capacity);
-    this.head = 0;
-    this.size = 0;
-  }
+  constructor(capacity) { this.capacity = capacity; this.clear(); }
   enqueue(item) {
-    const tail = (this.head + this.size) % this.capacity;
-    this.buffer[tail] = item;
-    if (this.size === this.capacity) this.head = (this.head + 1) % this.capacity; // вытесняем самый старый
+    this.buffer[(this.head + this.size) % this.capacity] = item;
+    if (this.size === this.capacity) this.head = (this.head + 1) % this.capacity;   // вытесняем самый старый
     else this.size += 1;
   }
   toArray() {
@@ -71,7 +65,7 @@ class BoundedQueue {
   clear() { this.buffer = new Array(this.capacity); this.head = 0; this.size = 0; }
 }
 
-/** Token bucket: ленивый пересчёт, O(1). Возвращает 0 при успехе или секунды ожидания. */
+/** Token bucket: ленивый пересчёт, O(1). Возвращает 0 или число секунд ожидания. */
 class TokenBucket {
   constructor(capacity, refillMs) { this.capacity = capacity; this.refillMs = refillMs; this.tokens = capacity; this.ts = Date.now(); }
   take() {
@@ -83,7 +77,7 @@ class TokenBucket {
   }
 }
 
-/** «Мешок»: перемешивание Фишера-Йейтса, O(n), без повторов подряд. */
+/** «Мешок» (перемешивание Фишера-Йейтса, O(n)): без повторов подряд. */
 class ShuffleBag {
   constructor(items) { this.items = items; this.queue = []; this.last = null; }
   draw() {
@@ -107,27 +101,26 @@ const throttle = (fn, ms) => {
 };
 
 /* ==========================================================================
-   Хранилище (localStorage с защитой от сбоев и подмены данных)
+   Хранилище (безопасные обёртки над localStorage)
    ========================================================================== */
 
-/** Приводит запись из хранилища к безопасной форме или возвращает null. */
+const safe = {
+  get(key) { try { return localStorage.getItem(key); } catch (_) { return null; } },
+  set(key, value) { try { localStorage.setItem(key, value); } catch (_) { /* квота или приватный режим */ } },
+  remove(key) { try { localStorage.removeItem(key); } catch (_) { /* ignore */ } }
+};
+
 function sanitizeMessage(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const role = raw.role === 'user' || raw.role === 'assistant' ? raw.role : null;
   const content = typeof raw.content === 'string' ? raw.content.slice(0, MAX_STORED) : '';
-  if (!role || !content) return null;
-  const msg = { role, content };
-  if (raw.kind === 'cat' && typeof raw.image === 'string' && IMG_ORIGIN.test(raw.image)) {
-    msg.kind = 'cat';
-    msg.image = raw.image;
-  }
-  return msg;
+  return role && content ? { role, content } : null;
 }
 
-const storage = {
+const chatStore = {
   load() {
     try {
-      const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      const data = JSON.parse(safe.get(STORAGE_KEY));
       const messages = Array.isArray(data && data.messages) ? data.messages.map(sanitizeMessage).filter(Boolean) : [];
       const mode = data && Object.prototype.hasOwnProperty.call(MODES, data.mode) ? data.mode : 'chat';
       return { messages: messages.slice(-HISTORY_LIMIT), mode };
@@ -135,12 +128,8 @@ const storage = {
       return { messages: [], mode: 'chat' };
     }
   },
-  save(messages, mode) {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ v: 1, mode, messages })); } catch (_) { /* квота или приватный режим */ }
-  },
-  clear() {
-    try { localStorage.removeItem(STORAGE_KEY); } catch (_) { /* ignore */ }
-  }
+  save(messages, mode) { safe.set(STORAGE_KEY, JSON.stringify({ v: 1, mode, messages })); },
+  clear() { safe.remove(STORAGE_KEY); }
 };
 
 /* ==========================================================================
@@ -148,49 +137,28 @@ const storage = {
    ========================================================================== */
 
 const SPRITES = {
-  // Рыцарь в закрытом шлеме и бесформенных латах: по нему не понять пол. Одинаков в обеих темах.
+  // Рыцарь в закрытом шлеме и бесформенных латах: пол не определить. Одинаков в обеих темах.
   knight: {
     pal: { A: '#c9ced8', '#': '#15151c', B: '#7a8aa6', Y: '#ffd800', D: '#4a5468' },
     rows: [
-      '....AAAA....',
-      '...AAAAAA...',
-      '...A####A...',
-      '...AAAAAA...',
-      '..BBBBBBBB..',
-      '.BBBYYYYBBB.',
-      '.BBBBBBBBBB.',
-      '.BBBBBBBBBB.',
-      '..BBBBBBBB..',
-      '..DDD..DDD..',
-      '.DDDD..DDDD.'
+      '....AAAA....', '...AAAAAA...', '...A####A...', '...AAAAAA...', '..BBBBBBBB..', '.BBBYYYYBBB.',
+      '.BBBBBBBBBB.', '.BBBBBBBBBB.', '..BBBBBBBB..', '..DDD..DDD..', '.DDDD..DDDD.'
     ]
   },
   tree: {
-    pal: { G: '#2f6b3a', g: '#4a9a4e', T: '#6b4226' },
+    pal: { G: '#a8461e', g: '#d98a2b', y: '#e2b43c', R: '#8c2f1b', T: '#6b4226' },   // осенняя крона
     px: 10,
     rows: [
-      '......GGGGGG......',
-      '....GGGggGGGGG....',
-      '..GGGGGGGGgGGGG...',
-      '.GGgGGGGGGGGGGGG..',
-      '.GGGGGGgGGGGGGGGG.',
-      '..GGGGGGGGGGGGGG..',
-      '....GGGGGGGGGG....',
-      '.......TTTT.......',
-      '.......TTTT.......',
-      '.......TTTT.......',
-      '......TTTTTT......',
-      '......TTTTTT......'
+      '......GGgGGG......', '....GGygRgGGGG....', '..GGgGGGyGgGGRG...', '.GGyGGRGGGgGGGGG..',
+      '.GGGGGgGyGGGRGGGG.', '..GRGGGGgGGGGyGG..', '....GGGgGGRGGG....', '.......TTTT.......',
+      '.......TTTT.......', '.......TTTT.......', '......TTTTTT......', '......TTTTTT......'
     ]
   },
   flame: {
     pal: { r: '#d1301c', O: '#ff8a1f', Y: '#ffe14a' },
     rows: ['...r...', '..rOr..', '.rOYOr.', '.rOYOr.', 'rOOYOOr', 'rOYYYOr']
   },
-  logs: {
-    pal: { b: '#6b4226', d: '#3d2514' },
-    rows: ['.bbbbbbb.', 'bddbbbddb']
-  }
+  logs: { pal: { b: '#6b4226', d: '#3d2514' }, rows: ['.bbbbbbb.', 'bddbbbddb'] }
 };
 
 /** Один проход O(строки * столбцы); тени собираются массивом и join'ом. */
@@ -200,8 +168,7 @@ function paintSprite(el, { rows, pal, px = 6 }) {
   rows.forEach((row, y) => {
     cols = Math.max(cols, row.length);
     for (let x = 0; x < row.length; x++) {
-      const color = pal[row[x]];
-      if (color) shadows.push(`${x * px}px ${y * px}px 0 ${color}`);
+      if (pal[row[x]]) shadows.push(`${x * px}px ${y * px}px 0 ${pal[row[x]]}`);
     }
   });
   el.style.setProperty('--sh', shadows.join(','));
@@ -212,12 +179,12 @@ function paintSprite(el, { rows, pal, px = 6 }) {
 Object.entries(SPRITES).forEach(([id, spec]) => paintSprite($(id), spec));
 
 function fitScene() {
-  document.documentElement.style.setProperty('--s', Math.min(1, (innerWidth - 8) / 540).toFixed(3));
+  const scale = Math.min(1, (innerWidth - 8) / 540, innerHeight / 760);
+  document.documentElement.style.setProperty('--s', scale.toFixed(3));
 }
 fitScene();
 addEventListener('resize', fitScene, { passive: true });
 
-/* Высота композера определяет, где стоит сцена (она «сидит» на нём) */
 const composer = $('composer');
 if ('ResizeObserver' in window) {
   new ResizeObserver(() => {
@@ -238,7 +205,7 @@ const LEAF_SHAPES = {
     '<path d="M12 2C19 6 20 15 12 22 4 15 5 6 12 2Z" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>' +
     '<path d="M12 5v17M12 11l3-2M12 14l-3-2M12 17l3-2" stroke="#000" stroke-opacity=".25" stroke-width=".8" fill="none"/>'
 };
-const LEAF_COLORS = ['#e0a030', '#c8601c', '#b5381f', '#8aa83c', '#d9822b'];
+const LEAF_COLORS = ['#e0a030', '#c8601c', '#b5381f', '#8aa83c', '#d9822b', '#e2b43c'];
 
 function createLeaf(index) {
   const duration = 9 + Math.random() * 9;
@@ -250,8 +217,7 @@ function createLeaf(index) {
     `--sw:${(15 + Math.random() * 35).toFixed(0)}px;--sw-d:${(2 + Math.random() * 2).toFixed(1)}s;` +
     `--lc:${LEAF_COLORS[index % LEAF_COLORS.length]}`;
   const shape = index % 3 === 0 ? 'oval' : 'maple';   // шаблоны статичны и доверенные
-  leaf.innerHTML =
-    `<span class="leaf__sway"><svg class="leaf__svg" viewBox="0 0 24 24" aria-hidden="true">${LEAF_SHAPES[shape]}</svg></span>`;
+  leaf.innerHTML = `<span class="leaf__sway"><svg class="leaf__svg" viewBox="0 0 24 24" aria-hidden="true">${LEAF_SHAPES[shape]}</svg></span>`;
   return leaf;
 }
 
@@ -270,29 +236,24 @@ const themeToggle = $('themeToggle');
 function setTheme(theme) {
   document.documentElement.dataset.theme = theme;
   themeToggle.textContent = theme === 'dark' ? '☾' : '☀';
-  try { localStorage.setItem(THEME_KEY, theme); } catch (_) { /* ignore */ }
+  safe.set(THEME_KEY, theme);
 }
-let savedTheme = null;
-try { savedTheme = localStorage.getItem(THEME_KEY); } catch (_) { /* ignore */ }
-setTheme(savedTheme === 'light' ? 'light' : 'dark');
+setTheme(safe.get(THEME_KEY) === 'light' ? 'light' : 'dark');
 themeToggle.addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
 
 /* ==========================================================================
-   Чат
+   Общие хелперы интерфейса
    ========================================================================== */
 
 const els = {
-  chat: $('chat'), form: $('form'), input: $('input'),
-  send: document.querySelector('.composer__send'), modeChip: $('modeChip'), clear: $('clearBtn')
+  card: $('card'), log: $('log'), form: $('form'), input: $('input'),
+  send: $('sendBtn'), toast: $('toast'), modeButtons: [...document.querySelectorAll('[data-mode]')]
 };
 const contextQueue = new BoundedQueue(HISTORY_LIMIT);
 const bucket = new TokenBucket(3, 5000);
 const phraseBag = new ShuffleBag(PHRASES);
-const catBag = new ShuffleBag(CATS);
-const state = { mode: 'chat', busy: false, started: false };
-
-/* --- вспомогательные --- */
-const persist = () => storage.save(contextQueue.toArray(), state.mode);
+const memeBag = new ShuffleBag(MEMES);
+const state = { mode: 'chat', busy: false };
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -301,67 +262,86 @@ function el(tag, className, text) {
   return node;
 }
 
-function scrollToEnd() {
-  els.chat.scrollTo({ top: els.chat.scrollHeight, behavior: reduceMotion ? 'auto' : 'smooth' });
+let toastTimer = 0;
+function showToast(text) {
+  els.toast.textContent = text;
+  els.toast.classList.add('toast--visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => els.toast.classList.remove('toast--visible'), TOAST_MS);
+}
+
+/* ==========================================================================
+   Карточка поддержки (Zero-Input) и мемы
+   ========================================================================== */
+
+function showCard(content, { meme = false } = {}) {
+  els.card.classList.toggle('card--meme', meme);
+  els.card.replaceChildren(content);   // новый узел заново запускает fade-in
+}
+
+function showPhrase() {
+  const wrap = el('div', 'card__content');
+  wrap.appendChild(el('p', 'card__text', phraseBag.draw()));
+  showCard(wrap);
+}
+
+function showMeme() {
+  const meme = memeBag.draw();
+  const wrap = el('div', 'card__content card__meme');
+  const emoji = el('p', 'card__emoji', meme.emoji);
+  emoji.setAttribute('aria-hidden', 'true');
+  wrap.append(el('p', 'card__caption', meme.top), emoji, el('p', 'card__caption', meme.bottom));
+  showCard(wrap, { meme: true });
+}
+
+/* ==========================================================================
+   Переписка с ИИ
+   ========================================================================== */
+
+const persist = () => chatStore.save(contextQueue.toArray(), state.mode);
+
+function updateChatting() {
+  const has = els.log.children.length > 0;
+  els.log.hidden = !has;
+  document.body.classList.toggle('page--chatting', has);
+}
+
+function scrollLogToEnd() {
+  els.log.scrollTo({ top: els.log.scrollHeight, behavior: reduceMotion ? 'auto' : 'smooth' });
 }
 
 function resizeInput() {
   els.input.style.height = 'auto';
-  els.input.style.height = `${Math.min(els.input.scrollHeight, 160)}px`;
+  els.input.style.height = `${Math.min(els.input.scrollHeight, 140)}px`;
 }
 
-function setStarted(value) {
-  state.started = value;
-  document.body.classList.toggle('page--started', value);
-}
-
-function setMode(mode) {
+function setMode(mode, { save = true } = {}) {
   state.mode = mode;
-  els.modeChip.textContent = `Режим: ${MODES[mode]} ↻`;
-  els.modeChip.setAttribute('aria-label', `Режим: ${MODES[mode]}. Нажмите, чтобы сменить`);
+  els.modeButtons.forEach((btn) => btn.setAttribute('aria-pressed', String(btn.dataset.mode === mode)));
   els.input.placeholder = PLACEHOLDERS[mode];
-  persist();
+  if (save) persist();
 }
 
-function setBusy(value) {
-  state.busy = value;
-  els.send.disabled = value;
-}
-
-/* --- рендер (одна функция на все типы сообщений) --- */
 function renderMessage(msg, { error = false } = {}) {
   const item = el('li', `message message--${msg.role}`);
   if (error) item.classList.add('message--error');
   const bubble = el('div', 'message__bubble');
-
-  if (msg.kind === 'cat') {
-    item.classList.add('message--cat');
-    const img = el('img', 'message__image');
-    img.alt = 'Милый котик';
-    img.decoding = 'async';
-    img.addEventListener('load', scrollToEnd);
-    img.addEventListener('error', () => { img.replaceWith(el('p', 'message__text', 'Котик спрятался, но он рядом.')); });
-    img.src = msg.image;
-    bubble.appendChild(img);
-  } else {
-    bubble.appendChild(el('p', 'message__text', msg.content));
-  }
+  bubble.appendChild(el('p', 'message__text', msg.content));
   item.appendChild(bubble);
   return item;
 }
 
-function appendToDom(msg, options) {
-  const node = renderMessage(msg, options);
-  els.chat.appendChild(node);
-  scrollToEnd();
-  return node;
+function appendToLog(msg, options) {
+  els.log.appendChild(renderMessage(msg, options));
+  updateChatting();
+  scrollLogToEnd();
 }
 
-/** Сообщение попадает в очередь, в localStorage и на экран. */
+/** Сообщение попадает в очередь (FIFO, максимум 10), в localStorage и на экран. */
 function pushMessage(msg) {
   contextQueue.enqueue(msg);
   persist();
-  appendToDom(msg);
+  appendToLog(msg);
 }
 
 function showTyping() {
@@ -370,14 +350,14 @@ function showTyping() {
   bubble.appendChild(el('span', 'message__text', 'ИИ думает'));
   for (let i = 0; i < 3; i++) bubble.appendChild(el('span', 'typing__dot'));
   item.appendChild(bubble);
-  els.chat.appendChild(item);
-  scrollToEnd();
+  els.log.appendChild(item);
+  updateChatting();
+  scrollLogToEnd();
   return item;
 }
 
-const showError = (text) => { setStarted(true); appendToDom({ role: 'assistant', content: text }, { error: true }); };
+const showError = (text) => appendToLog({ role: 'assistant', content: text }, { error: true });
 
-/* --- запрос к серверу: передаётся вся накопленная история (до 10 сообщений) --- */
 async function requestAnswer() {
   const messages = contextQueue.toArray().map(({ role, content }) => ({ role, content }));
   const controller = new AbortController();
@@ -403,18 +383,18 @@ async function requestAnswer() {
 }
 
 async function sendMessage() {
-  if (state.busy) return;                                  // single-flight
+  if (state.busy) return;                                   // single-flight
   const text = els.input.value.trim();
   if (!text) return;
   if (!navigator.onLine) { showError('Нет сети. Сообщение не отправлено: проверь подключение.'); return; }
   const wait = bucket.take();
   if (wait) { showError(`Не так быстро, воин. Подожди ещё ${wait} с.`); return; }
 
-  setStarted(true);
   pushMessage({ role: 'user', content: text });
   els.input.value = '';
   resizeInput();
-  setBusy(true);
+  state.busy = true;
+  els.send.disabled = true;
   const typing = showTyping();
   try {
     pushMessage({ role: 'assistant', content: await requestAnswer() });
@@ -422,57 +402,69 @@ async function sendMessage() {
     showError(e.name === 'AbortError' ? 'ИИ слишком долго думает. Попробуй ещё раз.' : e.message);
   } finally {
     typing.remove();
-    setBusy(false);
+    state.busy = false;
+    els.send.disabled = false;
     els.input.focus();
   }
 }
 
-/* --- действия подсказок (DRY: таблица обработчиков) --- */
-const ACTIONS = {
-  friend: () => startMode('friend'),
-  opponent: () => startMode('opponent'),
-  tired: () => { setStarted(true); pushMessage({ role: 'assistant', content: phraseBag.draw() }); },
-  cat: () => { setStarted(true); pushMessage({ role: 'assistant', content: CAT_CAPTION, kind: 'cat', image: catBag.draw() }); }
-};
-function startMode(mode) {
-  setMode(mode);
-  setStarted(true);
-  els.input.focus();
+/* ==========================================================================
+   Очистка («Новый привал»)
+   ========================================================================== */
+
+/* Удаляем только ключи самого приложения (а не localStorage.clear()): на github.io origin общий
+   для всех проектов пользователя, плюс остаются тема и метка о показанном интро. */
+function resetCamp() {
+  contextQueue.clear();
+  chatStore.clear();
+  els.log.replaceChildren();
+  updateChatting();
+  setMode('chat', { save: false });
+  els.input.value = '';
+  resizeInput();
+  showPhrase();
+  showToast('Память привала очищена. Твоя приватность под защитой.');
 }
-const instantActions = { tired: throttle(ACTIONS.tired, 600), cat: throttle(ACTIONS.cat, 800) };
 
-document.querySelectorAll('[data-action]').forEach((btn) => {
-  const name = btn.dataset.action;
-  btn.addEventListener('click', instantActions[name] || ACTIONS[name]);
-});
+/* ==========================================================================
+   События
+   ========================================================================== */
 
-/* --- события --- */
+$('memeBtn').addEventListener('click', throttle(showMeme, 400));
+$('warmBtn').addEventListener('click', throttle(showPhrase, 400));
+$('clearBtn').addEventListener('click', resetCamp);
+
 els.form.addEventListener('submit', (e) => { e.preventDefault(); sendMessage(); });
 els.input.addEventListener('input', resizeInput);
 els.input.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); els.form.requestSubmit(); }
 });
-els.modeChip.addEventListener('click', () => {
-  const order = Object.keys(MODES);
-  setMode(order[(order.indexOf(state.mode) + 1) % order.length]);
+els.modeButtons.forEach((btn) => btn.addEventListener('click', () => {
+  setMode(state.mode === btn.dataset.mode ? 'chat' : btn.dataset.mode);   // повторный клик снимает режим
   els.input.focus();
-});
-els.clear.addEventListener('click', () => {
-  if (!confirm('Начать новый привал? История чата будет удалена.')) return;
-  contextQueue.clear();
-  storage.clear();
-  els.chat.replaceChildren();
-  setStarted(false);
-  setMode('chat');
-});
+}));
 
-/* --- восстановление истории после перезагрузки --- */
+/* ==========================================================================
+   Запуск: восстановление истории и интро
+   ========================================================================== */
+
 (function restore() {
-  const saved = storage.load();
-  saved.messages.forEach((msg) => { contextQueue.enqueue(msg); els.chat.appendChild(renderMessage(msg)); });
-  setMode(saved.mode);
-  if (saved.messages.length) {
-    setStarted(true);
-    requestAnimationFrame(() => { els.chat.scrollTop = els.chat.scrollHeight; });
-  }
+  const saved = chatStore.load();
+  saved.messages.forEach((msg) => { contextQueue.enqueue(msg); els.log.appendChild(renderMessage(msg)); });
+  setMode(saved.mode, { save: false });
+  updateChatting();
+  if (saved.messages.length) requestAnimationFrame(() => { els.log.scrollTop = els.log.scrollHeight; });
+})();
+
+(function intro() {
+  const dialog = $('intro');
+  const closeIntro = () => {
+    if (typeof dialog.close === 'function') dialog.close();
+    else { dialog.removeAttribute('open'); dialog.dispatchEvent(new Event('close')); }
+  };
+  if (safe.get(VISITED_KEY)) { showPhrase(); return; }          // повторный вход: тепло сразу
+  dialog.addEventListener('close', () => { safe.set(VISITED_KEY, '1'); showPhrase(); }, { once: true });
+  $('introClose').addEventListener('click', closeIntro);
+  if (typeof dialog.showModal === 'function') dialog.showModal();
+  else dialog.setAttribute('open', '');
 })();
