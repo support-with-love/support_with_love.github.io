@@ -49,16 +49,18 @@
 
     <footer class="composer" id="composer">
       <form class="composer__form" id="form" autocomplete="off">
-        <div class="composer__modes" role="group" aria-label="Режим переработки негатива">
-          <button class="btn btn--toggle" type="button" data-mode="friend" aria-pressed="false">Как друг</button>
-          <button class="btn btn--toggle" type="button" data-mode="opponent" aria-pressed="false">Взгляд оппонента</button>
+        <div class="composer__modes" role="group" aria-label="Что сделать с твоим текстом">
+          <button class="btn btn--toggle" type="button" data-mode="chat" aria-pressed="true">Выговориться</button>
+          <button class="btn btn--toggle" type="button" data-mode="friend" aria-pressed="false">Смягчить</button>
+          <button class="btn btn--toggle" type="button" data-mode="opponent" aria-pressed="false">Понять автора</button>
         </div>
+        <p class="composer__mode-hint" id="modeHint"></p>
         <div class="composer__box">
           <label class="visually-hidden" for="input">Сообщение для ИИ</label>
-          <textarea class="composer__input" id="input" rows="1" maxlength="1000" aria-describedby="hint"></textarea>
+          <textarea class="composer__input" id="input" rows="1" maxlength="1000" aria-describedby="modeHint hint"></textarea>
           <button class="composer__send" id="sendBtn" type="submit" aria-label="Отправить">➤</button>
         </div>
-        <p class="composer__hint" id="hint">Необязательно. Вставь сообщение, которое задело. Enter отправляет, Shift+Enter переносит строку. Не пиши пароли и коммерческие тайны: текст уходит в GigaChat.</p>
+        <p class="composer__hint" id="hint">Ответы готовит ИИ стороннего сервиса: не пиши пароли и тайны компании. Enter отправляет, Shift+Enter переносит строку.</p>
       </form>
     </footer>
   </div>
@@ -68,21 +70,22 @@
   <dialog class="intro" id="intro" aria-labelledby="introTitle">
     <div class="intro__body">
       <h2 class="intro__title" id="introTitle">Привет, путник.</h2>
-      <p class="intro__lead">Этот привал создан, чтобы поддержать тебя. Без регистрации и без обязательных действий.</p>
+      <p class="intro__lead">Этот привал создал неравнодушный человек, чтобы поддержать тебя. Это неофициальный проект: он не принадлежит Яндексу и не заменяет живой разговор или помощь специалиста.</p>
       <ul class="intro__list">
         <li class="intro__item">
           <span aria-hidden="true">🔒</span>
-          <p><strong>Privacy-First.</strong> История чата хранится только в LocalStorage твоего браузера, в базу данных мы ничего не пишем. Фразы и мемы работают полностью локально. Текст уходит на сервер, только когда ты сам отправляешь его ИИ: последние до 10 сообщений диалога проходят через нашу функцию на Vercel в GigaChat (Сбер). Наш код их не сохраняет, но у GigaChat свои правила обработки данных.</p>
+          <p><strong>Privacy-First.</strong> История чата хранится только в LocalStorage твоего браузера, в базу данных мы ничего не пишем. Фразы и мемы работают полностью локально. Текст уходит на сервер, только когда ты сам пишешь ИИ: последние до 10 сообщений диалога передаются стороннему ИИ-сервису, чтобы он подготовил ответ. Наш код их не сохраняет, но у сервиса свои правила обработки данных.</p>
         </li>
         <li class="intro__item">
           <span aria-hidden="true">🧹</span>
-          <p><strong>Контроль.</strong> Кнопка «Новый привал» мгновенно и безвозвратно стирает локальную историю на этом устройстве. Уже отправленное в GigaChat мы отозвать не можем, поэтому секреты в чат лучше не писать.</p>
+          <p><strong>Контроль.</strong> Кнопка «Новый привал» мгновенно и безвозвратно стирает локальную историю на этом устройстве. Уже отправленное ИИ-сервису мы отозвать не можем, поэтому секреты в чат лучше не писать.</p>
         </li>
       </ul>
       <button class="btn btn--primary" id="introClose" type="button" autofocus>Зайти на привал</button>
     </div>
   </dialog>
 
+  <script src="phrases.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
