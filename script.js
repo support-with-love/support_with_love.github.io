@@ -7,8 +7,8 @@
    ========================================================================== */
 
 /* ---------- Конфиг ---------- */
-// Для GitHub Pages укажите полный адрес Vercel, например 'https://privat.vercel.app/api/gigachat'
-const API_URL = '/api/gigachat';
+// Для GitHub Pages укажите полный адрес Vercel, например 'https://privat.vercel.app/api/reply'
+const API_URL = '/api/reply';
 const VISITED_KEY = 'visited';
 const STORAGE_KEY = 'privat.chat.v1';
 const THEME_KEY = 'privat-theme';
@@ -17,30 +17,29 @@ const MAX_STORED = 2000;
 const REQUEST_TIMEOUT_MS = 30000;
 const TOAST_MS = 3800;
 
-const MODES = { chat: 'обычный чат', friend: 'как друг', opponent: 'взгляд оппонента' };
-const PLACEHOLDERS = {
-  chat: 'Если хочется выговориться, напиши сюда…',
-  friend: 'Вставь обидное сообщение, перескажу как друг…',
-  opponent: 'Вставь сообщение, посмотрим глазами его автора…'
+/* Режимы названы по результату, а не по роли: человек сразу понимает, что получит. */
+const MODES = {
+  chat: {
+    hint: 'Просто напиши, что на душе. Я отвечу тепло и без непрошеных советов.',
+    placeholder: 'Если хочется выговориться, напиши сюда…'
+  },
+  friend: {
+    hint: 'Вставь резкое или обидное сообщение. Я перескажу его спокойно, как друг: суть останется, яд уйдёт.',
+    placeholder: 'Вставь сообщение, которое тебя задело…'
+  },
+  opponent: {
+    hint: 'Вставь сообщение, которое задело. Я предположу, что могло стоять за ним у автора, чтобы ты не принимал это на свой счёт.',
+    placeholder: 'Вставь сообщение, и посмотрим, почему оно могло так прозвучать…'
+  }
 };
 
-const PHRASES = [
-  'Даже если ты сделал неправильный выбор, он привёл тебя сюда. Здесь можно выдохнуть.',
-  'Здесь и сейчас позаботься о себе: вода, тёплый чай, пять медленных вдохов.',
-  'Shit happens. Но все shit проходит, а ты остаёшься.',
-  'Спасибо, что так выкладывался. Отмена мероприятия не отменяет твой вклад.',
-  'Каждое твоё решение верное: ты принимал его с теми силами и знаниями, что были тогда.',
-  'Сегодня можно ничего не доказывать. Огонь потрескивает, всё хорошо.'
-];
-
-/* Мемы рисуются локально (подпись + эмодзи): без внешних картинок, которые могут пропасть или быть недоступны. */
-const MEMES = [
-  { emoji: '⏳', top: 'Дедлайн был вчера', bottom: 'Значит, мы уже в запасе. Дыши.' },
-  { emoji: '🔥🖥️🔥', top: 'Упал прод', bottom: 'Откат тоже скилл. Такое бывает у всех.' },
-  { emoji: '📞😶', top: 'Созвон на час', bottom: 'Мог быть сообщением, но ты пришёл. Ты молодец.' },
-  { emoji: '🐈‍💻', top: 'Кот-разработчик на ревью', bottom: 'Одобрено. Лапки прод не трогали.' },
-  { emoji: '🛌', top: 'Мероприятие отменили', bottom: 'Теперь можно просто пойти домой и поспать.' }
-];
+/* Тексты лежат в phrases.js: пополняйте его, script.js трогать не нужно. */
+const CONTENT = window.PRIVAL_CONTENT || {};
+const isText = (v) => typeof v === 'string' && v.trim().length > 0;
+const PHRASES = [...new Set(Object.values(CONTENT.phrases || {}).flat().filter(isText).map((s) => s.trim()))];
+const MEMES = (CONTENT.memes || []).filter((m) => m && isText(m.top) && isText(m.bottom));
+if (!PHRASES.length) PHRASES.push('Выдохни. Ты здесь, и этого сейчас достаточно.');
+if (!MEMES.length) MEMES.push({ emoji: '🐈', top: 'Мемы закончились', bottom: 'Зато котик рядом.' });
 
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = (id) => document.getElementById(id);
@@ -247,7 +246,7 @@ themeToggle.addEventListener('click', () => setTheme(document.documentElement.da
 
 const els = {
   card: $('card'), log: $('log'), form: $('form'), input: $('input'),
-  send: $('sendBtn'), toast: $('toast'), modeButtons: [...document.querySelectorAll('[data-mode]')]
+  send: $('sendBtn'), toast: $('toast'), modeHint: $('modeHint'), modeButtons: [...document.querySelectorAll('[data-mode]')]
 };
 const contextQueue = new BoundedQueue(HISTORY_LIMIT);
 const bucket = new TokenBucket(3, 5000);
@@ -318,7 +317,8 @@ function resizeInput() {
 function setMode(mode, { save = true } = {}) {
   state.mode = mode;
   els.modeButtons.forEach((btn) => btn.setAttribute('aria-pressed', String(btn.dataset.mode === mode)));
-  els.input.placeholder = PLACEHOLDERS[mode];
+  els.modeHint.textContent = MODES[mode].hint;
+  els.input.placeholder = MODES[mode].placeholder;
   if (save) persist();
 }
 
@@ -440,7 +440,7 @@ els.input.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); els.form.requestSubmit(); }
 });
 els.modeButtons.forEach((btn) => btn.addEventListener('click', () => {
-  setMode(state.mode === btn.dataset.mode ? 'chat' : btn.dataset.mode);   // повторный клик снимает режим
+  setMode(btn.dataset.mode);
   els.input.focus();
 }));
 
