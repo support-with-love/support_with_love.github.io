@@ -38,6 +38,14 @@ const CONTENT = window.PRIVAL_CONTENT || {};
 const isText = (v) => typeof v === 'string' && v.trim().length > 0;
 const PHRASES = [...new Set(Object.values(CONTENT.phrases || {}).flat().filter(isText).map((s) => s.trim()))];
 const MEMES = (CONTENT.memes || []).filter((m) => m && isText(m.top) && isText(m.bottom));
+/* Картинки-мемы: имя файла без пути, только безопасные форматы. Объект { src, alt } или просто строка. */
+const IMAGE_DIR = 'images/';
+const IMAGE_SHARE = 0.5;          // доля картинок среди мемов, если они есть
+const IMAGE_TIMEOUT_MS = 8000;
+const IMAGES = [...(CONTENT.images || []), ...(window.PRIVAL_IMAGES || [])]   // ручной список + автосписок images.js
+  .map((i) => (typeof i === 'string' ? { src: i } : i))
+  .filter((i) => i && isText(i.src) && /\.(avif|webp|png|jpe?g|gif|svg)$/i.test(i.src.trim()) && !/[\\/]/.test(i.src) && !i.src.trim().startsWith('.'))
+  .map((i) => ({ src: i.src.trim(), alt: isText(i.alt) ? i.alt.trim() : 'Мем-картинка' }));
 if (!PHRASES.length) PHRASES.push('Выдохни. Ты здесь, и этого сейчас достаточно.');
 if (!MEMES.length) MEMES.push({ emoji: '🐈', top: 'Мемы закончились', bottom: 'Зато котик рядом.' });
 
@@ -289,6 +297,8 @@ const contextQueue = new BoundedQueue(HISTORY_LIMIT);
 const bucket = new TokenBucket(3, 5000);
 const phraseBag = new ShuffleBag(PHRASES);
 const memeBag = new ShuffleBag(MEMES);
+const imageBag = new ShuffleBag(IMAGES);
+const brokenImages = new Set();
 const state = { mode: 'chat', busy: false };
 
 function el(tag, className, text) {
@@ -311,6 +321,7 @@ function showToast(text) {
    ========================================================================== */
 
 function showCard(content, { meme = false } = {}) {
+  els.card.classList.remove('card--loading');
   els.card.classList.toggle('card--meme', meme);
   els.card.replaceChildren(content);   // новый узел заново запускает fade-in
 }
@@ -321,13 +332,58 @@ function showPhrase() {
   showCard(wrap);
 }
 
-function showMeme() {
+function showTextMeme() {
   const meme = memeBag.draw();
   const wrap = el('div', 'card__content card__meme');
   const emoji = el('p', 'card__emoji', meme.emoji);
   emoji.setAttribute('aria-hidden', 'true');
   wrap.append(el('p', 'card__caption', meme.top), emoji, el('p', 'card__caption', meme.bottom));
   showCard(wrap, { meme: true });
+}
+
+/* Картинка грузится и декодируется заранее, и только потом попадает в карточку: рамка не прыгает. */
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const timer = setTimeout(() => { img.onload = img.onerror = null; reject(new Error('timeout')); }, IMAGE_TIMEOUT_MS);
+    img.onload = () => { clearTimeout(timer); resolve(img); };
+    img.onerror = () => { clearTimeout(timer); reject(new Error('load')); };
+    img.decoding = 'async';
+    img.src = IMAGE_DIR + encodeURIComponent(src);
+  });
+}
+
+function drawImage() {
+  for (let i = 0; i < IMAGES.length; i++) {
+    const item = imageBag.draw();
+    if (!brokenImages.has(item)) return item;
+  }
+  return null;
+}
+
+let memeSeq = 0;   // защита от гонки: показываем результат только последнего клика
+async function showMeme() {
+  const seq = ++memeSeq;
+  const item = IMAGES.length && Math.random() < IMAGE_SHARE ? drawImage() : null;
+  if (item) {
+    els.card.classList.add('card--loading');
+    try {
+      const img = await loadImage(item.src);
+      if (img.decode) await img.decode().catch(() => {});
+      if (seq !== memeSeq) return;
+      img.className = 'card__photo-img';
+      img.alt = item.alt;
+      if (img.naturalWidth && img.naturalHeight) { img.width = img.naturalWidth; img.height = img.naturalHeight; }   // резерв пропорций
+      const figure = el('figure', 'card__content card__photo');
+      figure.appendChild(img);
+      showCard(figure, { meme: true });
+      return;
+    } catch (_) {
+      brokenImages.add(item);          // битый файл больше не выпадает
+      if (seq !== memeSeq) return;
+    }
+  }
+  showTextMeme();
 }
 
 /* ==========================================================================
