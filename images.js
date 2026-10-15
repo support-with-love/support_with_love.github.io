@@ -1,1 +1,27 @@
-window.PRIVAL_IMAGES = [];
+window.PRIVAL_IMAGES = [
+  "09538050f658bfbe4bcdff1e3afa8d12.jpg",
+  "1683660162_papik-pro-p-otkritka-podderzhka-21.jpg",
+  "45f28946b3ba39127282e9f5f444b302 (2).jpg",
+  "59cb01b1.cfba6cd2_1766306531.jpg",
+  "7Mx_CpagV1A.jpg",
+  "877ec342a1d72d8703136a35a97a879c.jpg",
+  "A3heeiXCXqb_P25_v5GYW_K8_GLOil_Up9SVV4FyE6B6cQLjIJHgyaQigeAIFD8ieG.jpg",
+  "acbcc03d226ee298232ca979ff7c915c.jpg",
+  "AISelect_20260329_191911_Gmail.jpg",
+  "d364c8822d8c8a0475ca4e1e525c7200432805bd75fa89dc384d2e04a86dad9d.jpg",
+  "d56fbeb59c980ba0da335a48e1a86b37.jpg",
+  "IMG_20260606_221925_002.jpg",
+  "IMG_20260606_222619_148.jpg",
+  "j2a0YVg_nvc.jpg",
+  "KsyouLTxvBw.jpg",
+  "pO0cHXUEBCM.jpg",
+  "QLcccq_7raQ.jpg",
+  "Screenshot_20260225_174003_Gmail.jpg",
+  "Screenshot_20260326_223432_YouTube.jpg",
+  "Screenshot_20260414_202813_YouTube.jpg",
+  "Screenshot_20260428_015038_YouTube.jpg",
+  "Screenshot_20260529_123348_VK.jpg",
+  "Screenshot_20260603_232054_Collection.jpg",
+  "vIgvIVc4fMg.jpg",
+  "YouTube_20260527_235138.jpg"
+];
