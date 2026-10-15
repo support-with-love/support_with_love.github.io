@@ -579,3 +579,37 @@ els.modeButtons.forEach((btn) => btn.addEventListener('click', () => {
   if (typeof dialog.showModal === 'function') dialog.showModal();
   else dialog.setAttribute('open', '');
 })();
+
+/* ==========================================================================
+   Запасной путь для картинок: если images.js пуст, а сайт на GitHub Pages,
+   спрашиваем содержимое папки images/ у GitHub API (лимит 60 запросов/час на IP, поэтому кэш на 10 минут).
+   Работает для адресов вида user.github.io/repo/ и user.github.io.
+   ========================================================================== */
+
+(async function discoverImages() {
+  if (!IMAGES.length && /\.github\.io$/i.test(location.hostname)) {
+    const owner = location.hostname.split('.')[0];
+    const first = location.pathname.split('/')[1] || '';
+    const repo = first && !first.includes('.') ? first : location.hostname;
+    const key = `privat.images.${owner}/${repo}`;
+    let names = null;
+    try {
+      const cached = JSON.parse(safe.get(key));
+      if (cached && Date.now() - cached.ts < 600000) names = cached.names;
+    } catch (_) { /* нет кэша */ }
+    if (!names) {
+      try {
+        const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${IMAGE_DIR.replace(/\/$/, '')}`, { headers: { Accept: 'application/vnd.github+json' } });
+        if (res.ok) {
+          const list = await res.json();
+          names = Array.isArray(list) ? list.filter((f) => f && f.type === 'file').map((f) => String(f.name)) : [];
+          safe.set(key, JSON.stringify({ ts: Date.now(), names }));
+        }
+      } catch (_) { /* офлайн или лимит API: останутся текстовые мемы */ }
+    }
+    (names || [])
+      .filter((n) => /\.(avif|webp|png|jpe?g|gif|svg)$/i.test(n) && !n.startsWith('.'))
+      .forEach((n) => IMAGES.push({ src: n, alt: 'Мем-картинка' }));
+  }
+  console.info(`Привал: картинок для мемов — ${IMAGES.length}`);
+})();
