@@ -321,8 +321,11 @@ function showToast(text) {
    ========================================================================== */
 
 function showCard(content, { meme = false } = {}) {
+  const photo = content.classList.contains('card__photo');
   els.card.classList.remove('card--loading');
   els.card.classList.toggle('card--meme', meme);
+  els.card.classList.toggle('card--photo', photo);      // раскладка под картинку
+  document.body.classList.toggle('page--photo', photo);  // сцена уступает место фото
   els.card.replaceChildren(content);   // новый узел заново запускает fade-in
 }
 
@@ -361,6 +364,26 @@ function drawImage() {
   return null;
 }
 
+/* Просмотр на весь экран: картинка вписывается в окно браузера целиком (object-fit: contain). */
+let lightbox = null;
+function openLightbox(src, alt) {
+  if (typeof HTMLDialogElement === 'undefined') return;
+  if (!lightbox) {
+    lightbox = el('dialog', 'lightbox');
+    lightbox.setAttribute('aria-label', 'Просмотр картинки');
+    const close = el('button', 'btn btn--icon lightbox__close', '✕');
+    close.type = 'button';
+    close.setAttribute('aria-label', 'Закрыть');
+    lightbox.append(el('img', 'lightbox__img'), close);
+    lightbox.addEventListener('click', () => lightbox.close());   // тап в любом месте закрывает; Esc работает нативно
+    document.body.appendChild(lightbox);
+  }
+  const big = lightbox.querySelector('.lightbox__img');
+  big.src = src;
+  big.alt = alt;
+  lightbox.showModal();
+}
+
 let memeSeq = 0;   // защита от гонки: показываем результат только последнего клика
 async function showMeme() {
   const seq = ++memeSeq;
@@ -373,6 +396,11 @@ async function showMeme() {
       if (seq !== memeSeq) return;
       img.className = 'card__photo-img';
       img.alt = item.alt;
+      img.tabIndex = 0;                                   // тап или Enter открывают фото на весь экран
+      img.setAttribute('role', 'button');
+      img.setAttribute('aria-label', `${item.alt}. Нажми, чтобы увеличить`);
+      img.addEventListener('click', () => openLightbox(img.src, item.alt));
+      img.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLightbox(img.src, item.alt); } });
       if (img.naturalWidth && img.naturalHeight) { img.width = img.naturalWidth; img.height = img.naturalHeight; }   // резерв пропорций
       const figure = el('figure', 'card__content card__photo');
       figure.appendChild(img);
