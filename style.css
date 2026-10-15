@@ -15,7 +15,7 @@
   --user-border: #7f95cc;
   --font: "VT323", "Courier New", monospace;
   --s: 1;
-  --scene-h: calc(150px * var(--s) + 24px);
+  --scene-h: calc(200px * var(--s) + 24px);
   --composer-h: 190px;   /* обновляется из JS */
 }
 :root[data-theme="light"] {
@@ -156,21 +156,23 @@ button, textarea { font: inherit; color: inherit; }
   transition: bottom .4s ease, opacity .8s ease, filter .8s ease;
 }
 .page--chatting .scene { opacity: .16; filter: blur(2px); }
-.scene__inner { position: absolute; left: 50%; bottom: 14px; width: 520px; height: 150px; transform: translateX(-50%) scale(var(--s)); transform-origin: 50% 100%; }
+.scene__inner { position: absolute; left: 50%; bottom: 14px; width: 520px; height: 200px; transform: translateX(-50%) scale(var(--s)); transform-origin: 50% 100%; }
 .scene__ground { position: absolute; left: 0; right: 0; bottom: 0; height: 14px; background: var(--ground); border-top: 4px solid var(--border); }
+/* Пиксель-арт: статичный box-shadow без размытия, рисуется один раз. Анимируются только обёртки (transform + opacity). */
 .sprite { position: absolute; image-rendering: pixelated; }
 .sprite::before { content: ""; position: absolute; left: 0; top: 0; width: var(--px); height: var(--px); box-shadow: var(--sh); }
-.scene__tree { left: 0; bottom: 0; }
-.scene__knight { left: 100px; bottom: 0; }
-.scene__tea { position: absolute; left: 300px; bottom: 0; width: 66px; height: 56px; }
-.scene__stump { left: 0; bottom: 0; }
-.scene__mug { left: 3px; bottom: 12px; }
-.scene__steam { left: 21px; bottom: 44px; animation: steam 5s ease-out infinite; will-change: transform, opacity; }
+/* Дерево 234x198px; рыцарь 70x70px сидит справа от ствола, у корней (примерно треть высоты дерева). */
+.scene__tree { left: 150px; bottom: 0; }
+.scene__camp { position: absolute; left: 312px; bottom: 0; width: 70px; height: 70px; }
+.scene__knight { left: 0; bottom: 0; }
+.scene__steam { left: 26px; bottom: 40px; animation: steam 5s ease-out infinite; will-change: transform, opacity; }
 .scene__glow {
-  position: absolute; left: -87px; bottom: -40px; width: 240px; height: 240px; border-radius: 50%;
+  position: absolute; left: -65px; bottom: -60px; width: 200px; height: 200px; border-radius: 50%;
   background: radial-gradient(circle, var(--glow) 0%, transparent 65%);
   animation: breathe 8s ease-in-out infinite alternate; will-change: transform, opacity;
 }
+/* Листья, падающие с кроны. Область кроны и высота сцены заданы в script.js (TREE_CROWN, SCENE_H). */
+.scene__leaves { position: absolute; left: 130px; top: 0; width: 274px; height: 200px; pointer-events: none; }
 /* Медленно и плавно: без резких вспышек и мерцания. */
 @keyframes steam { 0% { transform: translateY(0); opacity: 0; } 30% { opacity: .7; } 100% { transform: translateY(-14px); opacity: 0; } }
 @keyframes breathe { from { transform: scale(.97); opacity: .85; } to { transform: scale(1.03); opacity: 1; } }
@@ -186,6 +188,14 @@ button, textarea { font: inherit; color: inherit; }
   92%  { opacity: .85; }
   100% { transform: translate3d(0, 105vh, 0) rotate(320deg); opacity: 0; }
 }
+/* Лист с дерева: стартует в кроне (--y) и падает на --fall px, до земли. */
+.leaf--tree { top: var(--y); animation-name: treeFall; }
+@keyframes treeFall {
+  0%   { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0; }
+  10%  { opacity: .9; }
+  85%  { opacity: .9; }
+  100% { transform: translate3d(0, var(--fall), 0) rotate(240deg); opacity: 0; }
+}
 @keyframes sway { from { transform: translate3d(calc(var(--sw) * -1), 0, 0); } to { transform: translate3d(var(--sw), 0, 0); } }
 
 @media (max-width: 560px) {
@@ -195,7 +205,7 @@ button, textarea { font: inherit; color: inherit; }
 }
 @media (prefers-reduced-motion: reduce) {
   .leaf, .leaf__sway, .scene__steam, .scene__glow, .typing__dot, .message, .card__content, .intro[open] { animation: none; }
-  .leaves { display: none; }
+  .leaves, .scene__leaves { display: none; }
   .scene, .toast, .page { transition: none; }
 }
 
