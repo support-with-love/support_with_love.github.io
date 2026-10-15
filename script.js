@@ -153,11 +153,13 @@ const SPRITES = {
       '.......TTTT.......', '.......TTTT.......', '......TTTTTT......', '......TTTTTT......'
     ]
   },
-  flame: {
-    pal: { r: '#d1301c', O: '#ff8a1f', Y: '#ffe14a' },
-    rows: ['...r...', '..rOr..', '.rOYOr.', '.rOYOr.', 'rOOYOOr', 'rOYYYOr']
+  // Кружка чая на пеньке и лёгкий пар: тёплый, спокойный образ без огня.
+  mug: {
+    pal: { c: '#e8dcc0', t: '#8a4b1f' },
+    rows: ['.cccccc...', '.cttttc.cc', '.cccccc..c', '.cccccc.cc', '..cccc....']
   },
-  logs: { pal: { b: '#6b4226', d: '#3d2514' }, rows: ['.bbbbbbb.', 'bddbbbddb'] }
+  steam: { pal: { s: '#dfe3ef' }, rows: ['..s.', '.s..', '..s.', '.s..'] },
+  stump: { pal: { b: '#6b4226', d: '#3d2514' }, rows: ['.bbbbbbbbb.', 'bddbbbbbddb'] }
 };
 
 /** Один проход O(строки * столбцы); тени собираются массивом и join'ом. */
