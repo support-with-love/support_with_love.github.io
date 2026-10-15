@@ -156,23 +156,18 @@ button, textarea { font: inherit; color: inherit; }
 .sprite::before { content: ""; position: absolute; left: 0; top: 0; width: var(--px); height: var(--px); box-shadow: var(--sh); }
 .scene__tree { left: 0; bottom: 0; }
 .scene__knight { left: 100px; bottom: 0; }
-.scene__fire { position: absolute; left: 300px; bottom: 0; width: 56px; height: 60px; }
-.scene__flame, .scene__logs { left: 4px; }
-.scene__flame { bottom: 12px; transform-origin: 50% 100%; animation: flicker .6s steps(4, end) infinite; will-change: transform, opacity; }
-.scene__logs { bottom: 0; }
+.scene__tea { position: absolute; left: 300px; bottom: 0; width: 66px; height: 56px; }
+.scene__stump { left: 0; bottom: 0; }
+.scene__mug { left: 3px; bottom: 12px; }
+.scene__steam { left: 21px; bottom: 44px; animation: steam 5s ease-out infinite; will-change: transform, opacity; }
 .scene__glow {
-  position: absolute; left: -90px; bottom: -40px; width: 240px; height: 240px; border-radius: 50%;
+  position: absolute; left: -87px; bottom: -40px; width: 240px; height: 240px; border-radius: 50%;
   background: radial-gradient(circle, var(--glow) 0%, transparent 65%);
-  animation: pulse 1.8s ease-in-out infinite alternate; will-change: transform, opacity;
+  animation: breathe 8s ease-in-out infinite alternate; will-change: transform, opacity;
 }
-@keyframes flicker {
-  0%   { transform: scale(1, 1); opacity: 1; }
-  25%  { transform: scale(.94, 1.12); opacity: .92; }
-  50%  { transform: scale(1.04, .9); opacity: 1; }
-  75%  { transform: scale(.96, 1.18); opacity: .88; }
-  100% { transform: scale(1, 1); opacity: 1; }
-}
-@keyframes pulse { from { transform: scale(.9); opacity: .7; } to { transform: scale(1.08); opacity: 1; } }
+/* Медленно и плавно: без резких вспышек и мерцания. */
+@keyframes steam { 0% { transform: translateY(0); opacity: 0; } 30% { opacity: .7; } 100% { transform: translateY(-14px); opacity: 0; } }
+@keyframes breathe { from { transform: scale(.97); opacity: .85; } to { transform: scale(1.03); opacity: 1; } }
 
 /* ---------- Листья (SVG), только transform + opacity ---------- */
 .leaves { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; contain: strict; }
@@ -193,7 +188,7 @@ button, textarea { font: inherit; color: inherit; }
   .composer__hint { font-size: 15px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .leaf, .leaf__sway, .scene__flame, .scene__glow, .typing__dot, .message, .card__content, .intro[open] { animation: none; }
+  .leaf, .leaf__sway, .scene__steam, .scene__glow, .typing__dot, .message, .card__content, .intro[open] { animation: none; }
   .leaves { display: none; }
   .scene, .toast, .page { transition: none; }
 }
