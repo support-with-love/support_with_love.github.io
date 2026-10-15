@@ -136,30 +136,47 @@ const chatStore = {
    ========================================================================== */
 
 const SPRITES = {
-  // Рыцарь в закрытом шлеме и бесформенных латах: пол не определить. Одинаков в обеих темах.
+  // Рыцарь сидит под деревом с кружкой чая. Закрытый шлем с узкой прорезью и бесформенные латы:
+  // ни пола, ни возраста не видно. Одинаков в обеих темах.
   knight: {
-    pal: { A: '#c9ced8', '#': '#15151c', B: '#7a8aa6', Y: '#ffd800', D: '#4a5468' },
+    pal: { A: '#c9ced8', '#': '#15151c', B: '#7a8aa6', Y: '#ffd800', D: '#4a5468', G: '#aab3c6', c: '#e8dcc0', t: '#8a4b1f' },
+    px: 5,
     rows: [
-      '....AAAA....', '...AAAAAA...', '...A####A...', '...AAAAAA...', '..BBBBBBBB..', '.BBBYYYYBBB.',
-      '.BBBBBBBBBB.', '.BBBBBBBBBB.', '..BBBBBBBB..', '..DDD..DDD..', '.DDDD..DDDD.'
+      '....AAAAAA....', '...AAAAAAAA...', '...AA####AA...', '...AAAAAAAA...', '....AAAAAA....',
+      '..BBBBBBBBBB..', '.BBBBBcttcBBB.', '.BBBBGccccGBB.', '.BBBBBccccBBB.', '.BBBBBBBBBBBB.',
+      '.BBBYYYYYYBBB.', '..BBBBBBBBBB..', '.BBBBB..BBBBB.', '.DDDDD..DDDDD.'
     ]
   },
+  // Большая осенняя крона и толстый ствол с корнями (26 x 22 клетки по 9px). Рыцарь ростом примерно в треть дерева.
   tree: {
-    pal: { G: '#a8461e', g: '#d98a2b', y: '#e2b43c', R: '#8c2f1b', T: '#6b4226' },   // осенняя крона
-    px: 10,
+    pal: { G: '#a8461e', g: '#d98a2b', y: '#e2b43c', R: '#8c2f1b', T: '#6b4226', t: '#4a2d18', u: '#3d2514' },
+    px: 9,
     rows: [
-      '......GGgGGG......', '....GGygRgGGGG....', '..GGgGGGyGgGGRG...', '.GGyGGRGGGgGGGGG..',
-      '.GGGGGgGyGGGRGGGG.', '..GRGGGGgGGGGyGG..', '....GGGgGGRGGG....', '.......TTTT.......',
-      '.......TTTT.......', '.......TTTT.......', '......TTTTTT......', '......TTTTTT......'
+      '........gGgyGgGGgG........',
+      '.....GGGGggggyGGGGGGg.....',
+      '...GggGGGyggGGGggGGGygg...',
+      '..GGgGgGgGgGyGGgGgGgGgGy..',
+      '.GgGGGgGGRyGGgGGGgGGRyGGg.',
+      'GGGGGGGGGGGGGGGGGGGGGGGGGG',
+      'gGGGgGGyRGGgGGGgGGyRGGgGGG',
+      '.GGGGyGgGgGRGGGGyGgGgGRGG.',
+      '.RgGGGGgyGGGRgGGGGgyGGGRg.',
+      '..GGyggRGGGTTTtyggRGGGGG..',
+      '...G.G.TGgGTTTt.G.TGgG....',
+      '.....g.GTTGTTTt.TTGgG.....',
+      '..........TTuTtt..........',
+      '..........TTTTut..........',
+      '..........TTuTtt..........',
+      '..........TTTTut..........',
+      '..........TTTTTt..........',
+      '..........TTTTTt..........',
+      '..........TTuTTt..........',
+      '.........TTTTTTtt.........',
+      '........TTTTTTTttt........',
+      '.......TTt.TTtt.tTt.......'
     ]
   },
-  // Кружка чая на пеньке и лёгкий пар: тёплый, спокойный образ без огня.
-  mug: {
-    pal: { c: '#e8dcc0', t: '#8a4b1f' },
-    rows: ['.cccccc...', '.cttttc.cc', '.cccccc..c', '.cccccc.cc', '..cccc....']
-  },
-  steam: { pal: { s: '#dfe3ef' }, rows: ['..s.', '.s..', '..s.', '.s..'] },
-  stump: { pal: { b: '#6b4226', d: '#3d2514' }, rows: ['.bbbbbbbbb.', 'bddbbbbbddb'] }
+  steam: { pal: { s: '#dfe3ef' }, rows: ['..s.', '.s..', '..s.', '.s..'] }
 };
 
 /** Один проход O(строки * столбцы); тени собираются массивом и join'ом. */
@@ -180,7 +197,7 @@ function paintSprite(el, { rows, pal, px = 6 }) {
 Object.entries(SPRITES).forEach(([id, spec]) => paintSprite($(id), spec));
 
 function fitScene() {
-  const scale = Math.min(1, (innerWidth - 8) / 540, innerHeight / 760);
+  const scale = Math.min(1, (innerWidth - 8) / 540, innerHeight / 820);
   document.documentElement.style.setProperty('--s', scale.toFixed(3));
 }
 fitScene();
@@ -206,16 +223,28 @@ const LEAF_SHAPES = {
     '<path d="M12 2C19 6 20 15 12 22 4 15 5 6 12 2Z" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>' +
     '<path d="M12 5v17M12 11l3-2M12 14l-3-2M12 17l3-2" stroke="#000" stroke-opacity=".25" stroke-width=".8" fill="none"/>'
 };
+// Область кроны в координатах сцены (px) и высота сцены: согласованы с .scene__leaves и .scene__inner в style.css.
+const TREE_CROWN = { x: 24, y: 40, w: 200, h: 60 };
+const SCENE_H = 200;
 const LEAF_COLORS = ['#e0a030', '#c8601c', '#b5381f', '#8aa83c', '#d9822b', '#e2b43c'];
 
-function createLeaf(index) {
-  const duration = 9 + Math.random() * 9;
+function createLeaf(index, tree = false) {
+  const duration = tree ? 6 + Math.random() * 5 : 9 + Math.random() * 9;
   const leaf = document.createElement('div');
-  leaf.className = 'leaf';
+  leaf.className = tree ? 'leaf leaf--tree' : 'leaf';
+  const size = tree ? 12 + Math.random() * 7 : 18 + Math.random() * 16;
+  const sway = tree ? 6 + Math.random() * 14 : 15 + Math.random() * 35;
+  let place = `--x:${(Math.random() * 100).toFixed(1)}%;`;
+  if (tree) {
+    // Лист стартует внутри кроны и падает ровно до земли: путь считается в координатах сцены.
+    const y = TREE_CROWN.y + Math.random() * TREE_CROWN.h;
+    place = `--x:${(TREE_CROWN.x + Math.random() * TREE_CROWN.w).toFixed(0)}px;--y:${y.toFixed(0)}px;` +
+      `--fall:${Math.max(20, SCENE_H - y - size).toFixed(0)}px;`;
+  }
   leaf.style.cssText =
-    `--x:${(Math.random() * 100).toFixed(1)}%;--size:${(18 + Math.random() * 16).toFixed(0)}px;` +
+    place + `--size:${size.toFixed(0)}px;` +
     `--d:${duration.toFixed(1)}s;--delay:-${(Math.random() * duration).toFixed(1)}s;` +
-    `--sw:${(15 + Math.random() * 35).toFixed(0)}px;--sw-d:${(2 + Math.random() * 2).toFixed(1)}s;` +
+    `--sw:${sway.toFixed(0)}px;--sw-d:${(2 + Math.random() * 2).toFixed(1)}s;` +
     `--lc:${LEAF_COLORS[index % LEAF_COLORS.length]}`;
   const shape = index % 3 === 0 ? 'oval' : 'maple';   // шаблоны статичны и доверенные
   leaf.innerHTML = `<span class="leaf__sway"><svg class="leaf__svg" viewBox="0 0 24 24" aria-hidden="true">${LEAF_SHAPES[shape]}</svg></span>`;
@@ -227,6 +256,11 @@ if (!reduceMotion) {
   const count = innerWidth < 600 ? 10 : 18;
   for (let i = 0; i < count; i++) fragment.appendChild(createLeaf(i));
   $('leaves').appendChild(fragment);
+
+  const treeFragment = document.createDocumentFragment();
+  const treeCount = innerWidth < 600 ? 5 : 8;
+  for (let i = 0; i < treeCount; i++) treeFragment.appendChild(createLeaf(i, true));
+  $('treeLeaves').appendChild(treeFragment);
 }
 
 /* ==========================================================================
