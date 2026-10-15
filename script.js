@@ -194,7 +194,7 @@ function paintSprite(el, { rows, pal, px = 6 }) {
   el.style.width = `${cols * px}px`;
   el.style.height = `${rows.length * px}px`;
 }
-Object.entries(SPRITES).forEach(([id, spec]) => paintSprite($(id), spec));
+Object.entries(SPRITES).forEach(([id, spec]) => { const node = $(id); if (node) paintSprite(node, spec); });
 
 function fitScene() {
   const scale = Math.min(1, (innerWidth - 8) / 540, innerHeight / 820);
@@ -260,7 +260,8 @@ if (!reduceMotion) {
   const treeFragment = document.createDocumentFragment();
   const treeCount = innerWidth < 600 ? 5 : 8;
   for (let i = 0; i < treeCount; i++) treeFragment.appendChild(createLeaf(i, true));
-  $('treeLeaves').appendChild(treeFragment);
+  const treeBox = $('treeLeaves');
+  if (treeBox) treeBox.appendChild(treeFragment);
 }
 
 /* ==========================================================================
