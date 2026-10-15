@@ -73,9 +73,9 @@ button, textarea { font: inherit; color: inherit; }
 .page--chatting .main { justify-content: flex-start; padding-bottom: 0; }
 
 /* ---------- Карточка поддержки (Zero-Input) ---------- */
-.stage { display: flex; flex-direction: column; gap: 14px; }
+.stage { display: flex; flex-direction: column; gap: 14px; flex: 0 1 auto; min-height: 0; max-height: 100%; }
 .card {
-  min-height: 150px; display: flex; align-items: center; justify-content: center; text-align: center;
+  flex: 0 1 auto; min-height: 150px; display: flex; align-items: center; justify-content: center; text-align: center;
   padding: 18px 22px; background: var(--box-bg); border: 4px solid var(--accent); box-shadow: 0 0 0 4px var(--box-bg);
 }
 .card:empty { visibility: hidden; }
@@ -217,3 +217,55 @@ button, textarea { font: inherit; color: inherit; }
   .card__emoji { font-size: 44px; }
   .composer__mode-hint { font-size: 16px; }
 }
+
+/* ---------- Фото в карточке: размер задаёт сама вёрстка, а не calc() ----------
+   Цепочка .app -> .main -> .stage -> .card -> .card__photo целиком на flex с min-height: 0.
+   Поэтому высота, оставшаяся после шапки, кнопок и композера, считается браузером сама:
+   при открытой клавиатуре, росте поля ввода и смене ориентации картинка пересчитывается без JS.
+   object-fit + max-width/max-height сохраняют пропорции любой картинки. */
+.card--photo { flex: 1 1 auto; min-height: 0; max-height: 68vh; padding: 8px; overflow: hidden; background: var(--box-bg); }
+.card__photo { flex: 1 1 0; align-self: stretch; min-width: 0; min-height: 0; margin: 0; display: flex; align-items: center; justify-content: center; }
+.card__photo-img { display: block; width: auto; height: auto; max-width: 100%; max-height: 100%; object-fit: contain; border: 3px solid var(--border); }
+.card--loading { opacity: .6; transition: opacity .2s; }
+/* пока показано фото, сцена привала не занимает место и уходит на второй план */
+.page--photo .main { padding-bottom: 0; }
+.page--photo .scene { opacity: .3; }
+/* в режиме переписки карточка компактная, высота задана явно */
+.page--chatting .card--photo { flex: 0 0 auto; height: 22vh; max-height: 22vh; }
+@media (max-width: 560px) {
+  .card { padding: 12px 14px; }
+  .card--photo { padding: 6px; max-height: 64vh; }
+}
+@media (max-height: 520px) {
+  .card--photo { max-height: none; padding: 4px; }
+}
+
+/* ---------- Компактный композер, пока смотрим фото ----------
+   Подсказки скрываются, пока в поле ввода нет фокуса. Как только человек тапнет по полю,
+   пояснения (включая то, что текст уходит ИИ-сервису) возвращаются, и это происходит ДО отправки. */
+.page--photo .composer:not(:focus-within) .composer__mode-hint,
+.page--photo .composer:not(:focus-within) .composer__hint { display: none; }
+.card__photo-img { cursor: zoom-in; }
+
+@media (max-width: 560px) {
+  /* три действия в один ряд вместо трёх строк; сердечко только для мыши */
+  .actions { gap: 6px; }
+  .actions .btn { flex: 1 1 0; min-width: 0; padding: 4px 6px; font-size: 18px; line-height: 1.1; text-align: center; }
+  .btn--heart::before { display: none; }
+  .composer__modes { flex-wrap: nowrap; gap: 6px; }
+  .composer__modes .btn { flex: 1 1 auto; padding: 2px 6px; font-size: 17px; }
+}
+@media (max-height: 520px) {
+  .header { padding: 2px 0; }
+  .btn--icon { width: 40px; min-height: 40px; }
+  .composer { padding: 4px 0 6px; }
+  .composer__modes { margin-bottom: 4px; }
+  .composer:not(:focus-within) .composer__mode-hint,
+  .composer:not(:focus-within) .composer__hint { display: none; }
+}
+
+/* ---------- Просмотр фото на весь экран ---------- */
+.lightbox { width: 100vw; max-width: 100vw; height: 100vh; height: 100dvh; max-height: 100dvh; margin: 0; padding: 0; border: 0; background: rgba(8, 8, 18, .94); }
+.lightbox[open] { display: flex; align-items: center; justify-content: center; }
+.lightbox__img { max-width: 100%; max-height: 100%; object-fit: contain; padding: calc(env(safe-area-inset-top) + 8px) 8px calc(env(safe-area-inset-bottom) + 8px); cursor: zoom-out; }
+.lightbox__close { position: absolute; top: calc(env(safe-area-inset-top) + 10px); right: 10px; }
