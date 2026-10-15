@@ -446,6 +446,24 @@ els.modeButtons.forEach((btn) => btn.addEventListener('click', () => {
   els.input.focus();
 }));
 
+/* Письмо: кнопка 💌 рядом с переключателем темы */
+(function letter() {
+  const dialog = $('letter');
+  const open = () => {
+    if (typeof dialog.showModal === 'function') dialog.showModal();
+    else dialog.setAttribute('open', '');
+    dialog.scrollTop = 0;
+  };
+  const close = () => {
+    if (typeof dialog.close === 'function') dialog.close();
+    else dialog.removeAttribute('open');
+  };
+  $('letterBtn').addEventListener('click', open);
+  $('letterX').addEventListener('click', close);
+  $('letterClose').addEventListener('click', close);
+  dialog.addEventListener('click', (e) => { if (e.target === dialog) close(); });   // клик по затемнению
+})();
+
 /* ==========================================================================
    Запуск: восстановление истории и интро
    ========================================================================== */
