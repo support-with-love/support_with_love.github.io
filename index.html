@@ -2,7 +2,7 @@
 <html lang="ru" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="color-scheme" content="dark light">
   <title>Привал Яндексоида</title>
   <meta name="description" content="Тихое место, чтобы выдохнуть, для тех, у кого отменились важные мероприятия.">
@@ -31,6 +31,8 @@
     <header class="header">
       <p class="header__brand">Привал Яндексоида</p>
       <div class="header__tools">
+        <button class="btn btn--icon btn--view" id="chatToggle" type="button" hidden aria-label="Открыть чат с ИИ">💬</button>
+        <button class="btn btn--icon btn--view" id="tapToggle" type="button" hidden aria-label="Вернуться к словам поддержки">🎁</button>
         <button class="btn btn--icon" id="letterBtn" type="button" aria-label="Открыть письмо от пользователя Яндекса" aria-haspopup="dialog">💌</button>
         <button class="btn btn--icon" id="themeToggle" type="button" aria-label="Переключить тему">☾</button>
       </div>
@@ -43,7 +45,6 @@
         <div class="actions" role="group" aria-label="Действия">
           <button class="btn btn--heart" id="memeBtn" type="button">🎁 Для улыбки</button>
           <button class="btn btn--heart" id="warmBtn" type="button">🔋 Еще тепла</button>
-          <button class="btn btn--heart" id="clearBtn" type="button">🧹 Новый привал</button>
         </div>
       </section>
 
@@ -57,7 +58,10 @@
           <button class="btn btn--toggle" type="button" data-mode="friend" aria-pressed="false">Смягчить</button>
           <button class="btn btn--toggle" type="button" data-mode="opponent" aria-pressed="false">Понять автора</button>
         </div>
-        <p class="composer__mode-hint" id="modeHint"></p>
+        <div class="composer__top">
+          <p class="composer__mode-hint" id="modeHint"></p>
+          <button class="btn btn--icon" id="clearBtn" type="button" title="Новый привал" aria-label="Новый привал: стереть переписку на этом устройстве">🧹</button>
+        </div>
         <div class="composer__box">
           <label class="visually-hidden" for="input">Сообщение для ИИ</label>
           <textarea class="composer__input" id="input" rows="1" maxlength="1000" aria-describedby="modeHint hint"></textarea>
@@ -143,6 +147,8 @@
 
   <script src="phrases.js"></script>
   <script src="images.js"></script>
+  <script src="chat.js"></script>
+  <script src="letter.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
